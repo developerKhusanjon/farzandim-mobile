@@ -1038,6 +1038,30 @@ export const aiSubjectChips = [
 
 const AI_REPLIES: { match: RegExp; content: string; terms?: string[] }[] = [
   {
+    match: /darslar qanday|bugungi dars/i,
+    content:
+      'Bugun farzandingiz 4 ta darsda qatnashdi:\n\n• Matematika: "Ko‘p xonali sonlar" — darsda faol qatnashdi, misollarni mustaqil ishladi.\n• Ingliz tili: Yangi lug‘at so‘zlarini yodlashda a‘lo natija ko‘rsatdi.\n• Tabiatshunoslik: Yangi tushunchalar bo‘yicha biroz ko‘proq takrorlash kerak.\n\nUmumiy holati: Maktabda kayfiyati yaxshi, darslarda diqqatli bo‘ldi.',
+    terms: ['faollik', 'matematika', 'ingliz tili'],
+  },
+  {
+    match: /dalda|rag'bat|qo'llab|ruhlan/i,
+    content:
+      'Ota-ona sifatida eng yaxshi yondashuv — solishtirmasdan, uning o‘z harakatini e‘tirof etish:\n\n1. "Bugun darsda tirishqoqlik bilan qatnashganing meni juda quvontirdi."\n2. Natijani emas, intilishni maqtang: "Qiyin misol ustida oxirigacha ishlaganing ajoyib!"\n3. Kechki ovqat paytida: "Bugun maktabda seni eng qiziqtirgan voqea nima bo‘ldi?" deb samimiy qiziqing.\n\nBolaga eng muhimi — uning harakati siz uchun qadrli ekanligini his qilishdir.',
+    terms: ['dalda', 'ishonch', 'muvaffaqiyat'],
+  },
+  {
+    match: /yordam kerak|zaif|qaysi fan|kamchilik/i,
+    content:
+      'Tahlillarimizga ko‘ra, hozirda Tabiatshunoslik va Matematika fanlaridagi ayrim mavzularga biroz e‘tibor zarur:\n\n1. Tabiatshunoslik: Yangi atamalarni rasmlar yoki hayotiy misollar orqali eslab qolish osonroq kechadi.\n2. Matematika: Qoidalarni tushunish yaxshi, biroq hisob-kitob tezligini oshirish uchun har kuni 10 daqiqa kichik misollar yechish tavsiya etiladi.\n\nQo‘shimcha qiyin mavzular bo‘yicha soddalashtirilgan topshiriqlar tayyorlab beraymi?',
+    terms: ['tabiatshunoslik', 'takrorlash', 'mashq'],
+  },
+  {
+    match: /qobiliyat|iqtidor|to'garak|iste'dod/i,
+    content:
+      'Farzandingizda tahliliy fikrlash va konstruktiv ijodkorlik (Robototexnika va Mental arifmetika) bo‘yicha yuqori iqtidor kuzatilmoqda (90% gacha):\n\n• Fazoviy tasavvuri va mantiqiy ketma-ketliklarni tez ilg‘aydi.\n• Tavsiya: Dasturlash yoki Robototexnika to‘garagida davom ettirish uning salohiyatini yanada ochadi.\n• Uydagi mashg‘ulot: Lego yoki murakkab mantiqiy konstruktorlar bilan shug‘ullantirish juda foydali.',
+    terms: ['robototexnika', 'mantiq', 'iqtidor'],
+  },
+  {
     match: /soddalash|oson|qiyin/i,
     content:
       'Vazifani soddalashtirdim:\n\n• Mashqlar soni kamaytirildi — avval 3 tasini bajarsin\n• Har bir mashq oldiga namuna qo‘shdim\n• Murakkab so‘zlarni oddiyroq so‘zlar bilan almashtirdim\n\nAvval namunani birga ko‘rib chiqing, keyin Aziza o‘xshash mashqni mustaqil bajarsin. Tugagach, birga tekshiring.',

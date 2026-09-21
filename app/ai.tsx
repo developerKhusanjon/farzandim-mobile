@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   KeyboardAvoidingView,
   Platform,
@@ -7,23 +7,37 @@ import {
   TextInput,
   View,
 } from 'react-native'
+import { useLocalSearchParams } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Badge, Card, IconButton, IconTile, LogoMark, ScreenHeader, Txt } from '@/ui'
-import { colors, fonts, layout, radius, spacing } from '@/theme'
+import { Badge, Card, Icon, IconButton, IconTile, LogoMark, ScreenHeader, Txt } from '@/ui'
+import { accent, colors, fonts, layout, radius, spacing } from '@/theme'
 import { useSendAiMessage } from '@/api/queries'
 import { aiGreeting, aiSubjectChips } from '@/mocks/data'
 import type { AiMessage } from '@/api/types'
 
-/** AI yordamchi chat (mockup №8) */
+const QUICK_PROMPTS = [
+  { id: 'p1', text: 'Bugungi darslar qanday o‘tdi?', icon: 'message-circle' as const, colorKey: 'purple' as const },
+  { id: 'p2', text: 'Bugun farzandimga qanday dalda beray?', icon: 'heart' as const, colorKey: 'pink' as const },
+  { id: 'p3', text: 'Qaysi fandan yordam kerak?', icon: 'alert-triangle' as const, colorKey: 'amber' as const },
+  { id: 'p4', text: 'Qobiliyatini qanday oshiramiz?', icon: 'sparkles' as const, colorKey: 'teal' as const },
+  { id: 'p5', text: 'Uy vazifasini soddalashtirib ber', icon: 'book-open' as const, colorKey: 'blue' as const },
+]
+
+/**
+ * AI yordamchi — ota-onalar uchun klaviaturasiz,
+ * tayyor savol tugmalari orqali ishlaydigan aqlli yordamchi.
+ */
 export default function AiScreen() {
   const insets = useSafeAreaInsets()
   const scrollRef = useRef<ScrollView>(null)
   const send = useSendAiMessage()
+  const params = useLocalSearchParams<{ prompt?: string }>()
 
   const [input, setInput] = useState('')
   const [messages, setMessages] = useState<AiMessage[]>([
     { id: 'greeting', author: 'AI', content: aiGreeting, createdAt: new Date().toISOString() },
   ])
+  const initialPromptHandled = useRef(false)
 
   const submit = async (text: string) => {
     const content = text.trim()
@@ -34,16 +48,37 @@ export default function AiScreen() {
       { id: `u-${Date.now()}`, author: 'USER', content, createdAt: new Date().toISOString() },
     ])
     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50)
-    const reply = await send.mutateAsync(content)
-    setMessages((prev) => [...prev, reply])
-    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50)
+    try {
+      const reply = await send.mutateAsync(content)
+      setMessages((prev) => [...prev, reply])
+      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50)
+    } catch (e) {
+      // xato holatida fallback
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `err-${Date.now()}`,
+          author: 'AI',
+          content: 'Kechirasiz, javob olishda xatolik yuz berdi. Iltimos qaytadan urinib ko‘ring.',
+          createdAt: new Date().toISOString(),
+        },
+      ])
+    }
   }
+
+  // Agar sahifaga prompt parametri bilan kirilsa, avtomatik savol yuboriladi
+  useEffect(() => {
+    if (params.prompt && !initialPromptHandled.current) {
+      initialPromptHandled.current = true
+      void submit(params.prompt)
+    }
+  }, [params.prompt])
 
   const showChips = messages.length === 1
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      <ScreenHeader title="AI yordamchi" subtitle="Farzandim AI" />
+      <ScreenHeader title="AI yordamchi" subtitle="Ota-onalar uchun aqlli maslahatchi" />
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
@@ -61,6 +96,7 @@ export default function AiScreen() {
           }}
           keyboardShouldPersistTaps="handled"
         >
+          {/* Xabarlar ro'yxati */}
           {messages.map((message) => {
             const isAi = message.author === 'AI'
             return (
@@ -75,8 +111,8 @@ export default function AiScreen() {
                 {isAi ? (
                   <View
                     style={{
-                      width: 34,
-                      height: 34,
+                      width: 36,
+                      height: 36,
                       borderRadius: radius.pill,
                       backgroundColor: colors.card,
                       borderWidth: 1,
@@ -85,11 +121,11 @@ export default function AiScreen() {
                       justifyContent: 'center',
                     }}
                   >
-                    <LogoMark size={19} />
+                    <LogoMark size={20} />
                   </View>
                 ) : null}
 
-                <View style={{ maxWidth: '82%', gap: spacing.sm }}>
+                <View style={{ maxWidth: '84%', gap: spacing.sm }}>
                   <View
                     style={{
                       paddingHorizontal: spacing.base,
@@ -103,9 +139,9 @@ export default function AiScreen() {
                     }}
                   >
                     <Txt
-                      variant="small"
+                      variant="body"
                       color={isAi ? colors.text : colors.white}
-                      style={{ lineHeight: 21 }}
+                      style={{ lineHeight: 22 }}
                     >
                       {message.content}
                     </Txt>
@@ -127,8 +163,8 @@ export default function AiScreen() {
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
               <View
                 style={{
-                  width: 34,
-                  height: 34,
+                  width: 36,
+                  height: 36,
                   borderRadius: radius.pill,
                   backgroundColor: colors.card,
                   borderWidth: 1,
@@ -137,7 +173,7 @@ export default function AiScreen() {
                   justifyContent: 'center',
                 }}
               >
-                <LogoMark size={19} />
+                <LogoMark size={20} />
               </View>
               <View
                 style={{
@@ -150,20 +186,25 @@ export default function AiScreen() {
                   borderColor: colors.border,
                 }}
               >
-                <Txt variant="small" color={colors.textMuted}>
-                  Yozmoqda...
+                <Txt variant="body" color={colors.textMuted}>
+                  AI tahlil qilmoqda...
                 </Txt>
               </View>
             </View>
           ) : null}
 
-          {/* Fan chiplari (mockup №8) */}
+          {/* Dastlabki fan chiplari */}
           {showChips && !send.isPending ? (
-            <Card style={{ marginLeft: 42 }} padded={false}>
+            <Card style={{ marginLeft: 44 }} padded={false}>
+              <View style={{ paddingHorizontal: spacing.base, paddingTop: spacing.md, paddingBottom: 4 }}>
+                <Txt variant="caption" color={colors.textSecondary} style={{ fontFamily: fonts.bodySemibold }}>
+                  FAN BO‘YICHA YORDAM SO‘RASH:
+                </Txt>
+              </View>
               {aiSubjectChips.map((chip, index) => (
                 <Pressable
                   key={chip.id}
-                  onPress={() => void submit(`${chip.label} bo'yicha yordam kerak`)}
+                  onPress={() => void submit(`${chip.label} darsi bo‘yicha yordam kerak`)}
                   style={({ pressed }) => ({
                     flexDirection: 'row',
                     alignItems: 'center',
@@ -176,22 +217,73 @@ export default function AiScreen() {
                   })}
                 >
                   <IconTile name={chip.iconKey} colorKey={chip.colorKey} size={32} />
-                  <Txt variant="bodyMedium">{chip.label}</Txt>
+                  <Txt variant="bodySemibold">{chip.label}</Txt>
                 </Pressable>
               ))}
             </Card>
           ) : null}
         </ScrollView>
 
-        {/* Kiritish maydoni */}
+        {/* Tayyor tavsiya savol-tugmalari (Klaviaturasiz muloqot uchun) */}
+        <View
+          style={{
+            backgroundColor: colors.card,
+            borderTopWidth: 1,
+            borderTopColor: colors.border,
+            paddingVertical: spacing.sm,
+          }}
+        >
+          <View style={{ paddingHorizontal: layout.screenPadding, paddingBottom: 6 }}>
+            <Txt variant="caption" color={colors.textSecondary} style={{ fontFamily: fonts.bodySemibold }}>
+              TAYYOR SAVOLLARNI BOSING:
+            </Txt>
+          </View>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{
+              paddingHorizontal: layout.screenPadding,
+              gap: spacing.sm,
+            }}
+          >
+            {QUICK_PROMPTS.map((qp) => {
+              const tone = accent(qp.colorKey)
+              return (
+                <Pressable
+                  key={qp.id}
+                  disabled={send.isPending}
+                  onPress={() => void submit(qp.text)}
+                  style={({ pressed }) => ({
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 6,
+                    paddingVertical: 8,
+                    paddingHorizontal: 12,
+                    borderRadius: radius.pill,
+                    backgroundColor: pressed ? tone.soft : colors.bg,
+                    borderWidth: 1,
+                    borderColor: pressed ? tone.main : colors.border,
+                  })}
+                >
+                  <Icon name={qp.icon} size={14} color={tone.main} />
+                  <Txt variant="smallMedium" color={colors.text}>
+                    {qp.text}
+                  </Txt>
+                </Pressable>
+              )
+            })}
+          </ScrollView>
+        </View>
+
+        {/* Ixtiyoriy yozish maydoni */}
         <View
           style={{
             flexDirection: 'row',
             alignItems: 'flex-end',
             gap: spacing.sm,
             paddingHorizontal: layout.screenPadding,
-            paddingTop: spacing.md,
-            paddingBottom: insets.bottom + spacing.md,
+            paddingTop: spacing.sm,
+            paddingBottom: insets.bottom + spacing.sm,
             borderTopWidth: 1,
             borderTopColor: colors.border,
             backgroundColor: colors.card,
@@ -200,7 +292,7 @@ export default function AiScreen() {
           <TextInput
             value={input}
             onChangeText={setInput}
-            placeholder="Savolingizni yozing..."
+            placeholder="Yoki savolingizni yozing..."
             placeholderTextColor={colors.textMuted}
             multiline
             style={{

@@ -22,8 +22,13 @@ import {
 import { accent, colors, fonts, gradients, layout, radius, spacing } from '@/theme'
 import { useDashboard } from '@/api/queries'
 import { useActiveChild, useSession } from '@/store/session'
+import { HomeQuickActions } from '@/features/home/home-quick-actions'
+import { HomeAiBrief } from '@/features/home/home-ai-brief'
+import { HomeSchedulePreview } from '@/features/home/home-schedule-preview'
+import { HomeCharacterPreview } from '@/features/home/home-character-preview'
+import { HomeInterestsPreview } from '@/features/home/home-interests-preview'
 
-/** Bosh sahifadagi kichik ko'rsatkich kartasi (mockup №3) */
+/** Bosh sahifadagi kichik ko'rsatkich kartasi */
 function MiniStat({
   label,
   value,
@@ -70,6 +75,7 @@ export default function HomeScreen() {
   return (
     <>
       <View style={{ flex: 1, backgroundColor: colors.bg }}>
+        {/* Sarlavha: Ota-ona profili + bildirishnoma */}
         <View
           style={{
             paddingTop: insets.top + spacing.sm,
@@ -77,7 +83,6 @@ export default function HomeScreen() {
             paddingBottom: spacing.md,
           }}
         >
-          {/* Sarlavha: ota-ona + bildirishnoma */}
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
             <Avatar
               uri={parent?.avatarUrl}
@@ -162,7 +167,7 @@ export default function HomeScreen() {
               </View>
             </LinearGradient>
 
-            {/* Farzand kartasi */}
+            {/* Farzand tanlash kartasi */}
             {child ? (
               <Card onPress={() => setSwitcherOpen(true)} padded={false}>
                 <View
@@ -195,7 +200,7 @@ export default function HomeScreen() {
               </Card>
             ) : null}
 
-            {/* Uchta qisqa ko'rsatkich */}
+            {/* 3 ta qisqa ko'rsatkich */}
             {isLoading || !child ? (
               <View style={{ flexDirection: 'row', gap: spacing.md }}>
                 {[0, 1, 2].map((i) => (
@@ -225,6 +230,17 @@ export default function HomeScreen() {
                 />
               </View>
             )}
+
+            {/* Asosiy 4 ta bo'limga tezkor kirish (Keksa ota-onalar uchun juda qulay) */}
+            <HomeQuickActions />
+
+            {/* Bugungi AI Xulosasi va Klaviaturasiz Tayyor Savollar */}
+            <HomeAiBrief child={child} />
+          </View>
+
+          {/* Dars jadvali — Bosh sahifadagi to'g'ridan-to'g'ri ko'rinish */}
+          <View style={{ paddingHorizontal: layout.screenPadding, marginTop: spacing.lg }}>
+            <HomeSchedulePreview />
           </View>
 
           {/* Bugungi vazifalar */}
@@ -259,7 +275,7 @@ export default function HomeScreen() {
                   >
                     <IconTile subjectId={task.subjectId} colorKey={task.colorKey} size={36} />
                     <View style={{ flex: 1, minWidth: 0 }}>
-                      <Txt variant="bodyMedium" numberOfLines={1}>
+                      <Txt variant="bodySemibold" numberOfLines={1} color={colors.text}>
                         {task.subjectName}
                       </Txt>
                       <Txt variant="caption">
@@ -268,8 +284,8 @@ export default function HomeScreen() {
                     </View>
                     <View
                       style={{
-                        width: 22,
-                        height: 22,
+                        width: 24,
+                        height: 24,
                         borderRadius: radius.pill,
                         borderWidth: task.done ? 0 : 1.5,
                         borderColor: colors.borderStrong,
@@ -279,13 +295,23 @@ export default function HomeScreen() {
                       }}
                     >
                       {task.done ? (
-                        <Icon name="check" size={13} color={colors.white} strokeWidth={3} />
+                        <Icon name="check" size={14} color={colors.white} strokeWidth={3} />
                       ) : null}
                     </View>
                   </Pressable>
                 ))
               )}
             </Card>
+          </View>
+
+          {/* Intellekt va xarakter — Bosh sahifadagi to'g'ridan-to'g'ri ko'rinish */}
+          <View style={{ paddingHorizontal: layout.screenPadding, marginTop: spacing.lg }}>
+            <HomeCharacterPreview childId={child?.id} />
+          </View>
+
+          {/* Qiziqishlar va qobiliyatlar — Bosh sahifadagi to'g'ridan-to'g'ri ko'rinish */}
+          <View style={{ paddingHorizontal: layout.screenPadding, marginTop: spacing.lg }}>
+            <HomeInterestsPreview childId={child?.id} />
           </View>
 
           {/* So'nggi dars xulosasi */}
@@ -323,20 +349,30 @@ export default function HomeScreen() {
             </View>
           ) : null}
 
-          {/* AI yordamchi */}
+          {/* AI Tavsiyalari & Kognitiv Rivojlantirish bloki */}
           <View style={{ paddingHorizontal: layout.screenPadding, marginTop: spacing.lg }}>
-            <NoteCard tone="purple" icon="sparkles" title="AI yordamchi">
+            <NoteCard tone="purple" icon="sparkles" title="AI bilan o‘rganish">
               <View style={{ gap: spacing.md }}>
                 <Txt variant="small">
-                  Uy vazifasini tushunmadingizmi? Soddalashtirib, bosqichma-bosqich tushuntirib
-                  beraman.
+                  Farzandingizning darslari, tushunmagan mavzulari va qiziqishlari bo‘yicha AI
+                  maxsus mashqlar tayyorlagan.
                 </Txt>
-                <Button
-                  label="Yordam so'rash"
-                  size="sm"
-                  onPress={() => router.push('/ai')}
-                  style={{ backgroundColor: accent('purple').main, borderColor: accent('purple').main }}
-                />
+                <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+                  <Button
+                    label="Tavsiya mashqlar"
+                    size="sm"
+                    variant="primary"
+                    onPress={() => router.push('/recommendations')}
+                    style={{ flex: 1, backgroundColor: accent('purple').main, borderColor: accent('purple').main }}
+                  />
+                  <Button
+                    label="AI maslahat"
+                    size="sm"
+                    variant="soft"
+                    onPress={() => router.push('/ai')}
+                    style={{ flex: 1 }}
+                  />
+                </View>
               </View>
             </NoteCard>
           </View>
