@@ -21,7 +21,6 @@ import type { CharacterGroup } from '@/api/types'
  * Har bir raqam ostida ota-ona tushunadigan izoh bor — quruq foiz emas.
  */
 function CharacterCard({ group }: { group: CharacterGroup }) {
-  // Backend: AI_ANALYSIS; mock: AI. Qolganlari — o'qituvchi topshirig'i yoki kuzatuvi
   const isAi = group.source === 'AI' || group.source === 'AI_ANALYSIS'
   const tone = accent(group.colorKey)
 

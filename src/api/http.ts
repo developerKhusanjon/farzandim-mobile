@@ -1,18 +1,7 @@
 /**
- * Yagona HTTP klient.
- *
- *  • `EXPO_PUBLIC_API_URL` berilgan bo'lsa — haqiqiy mobile-backend (`.../api/v1`);
- *    berilmagan yoki `EXPO_PUBLIC_USE_MOCK=true` — `src/mocks/router.ts`.
- *  • javob qobig'ini ochadi: `{ data }` → `data`; xato → `ApiError`, tarmoq yo'q → `NetworkError`
- *  • 401 → bitta umumiy `POST /auth/refresh` (single-flight) → so'rov bir marta qaytariladi.
- *    Backend refresh tokenni har safar almashtiradi va eskisini qayta ishlatishni
- *    o'g'irlik deb biladi — shuning uchun parallel refresh bo'lmasligi shart.
- *  • token tugashiga oz qolganda so'rovdan oldin yangilanadi
- *  • login/refresh/logout tokensiz ketadi: muddati o'tgan token bilan backend
- *    ochiq endpointda ham 401 qaytaradi (Quarkus proactive auth).
- *
- * Tokenlarni saqlash `store/session.ts` da (SecureStore) — bu modul unga
- * `configureAuth` orqali ulanadi, aylana import bo'lmaydi.
+ * HTTP klient. `EXPO_PUBLIC_API_URL` bo'lmasa yoki `EXPO_PUBLIC_USE_MOCK=true` bo'lsa — mock.
+ * 401'da tokenni bir marta yangilaydi (refresh token har safar almashadi, shuning uchun
+ * bir vaqtda faqat bitta refresh). Tokenlarni saqlash — `store/session.ts`.
  */
 import { mockRequest } from '@/mocks/router'
 
@@ -49,7 +38,7 @@ export interface AuthTokens {
   expiresAt: number | null
 }
 
-/** `POST /auth/login`, `/auth/login/otp/verify`, `/auth/refresh` javobidagi tokenlar */
+/** Login va refresh javobidagi tokenlar */
 export function tokensFrom(res: { accessToken: string; refreshToken: string; expiresIn?: number }) {
   return {
     accessToken: res.accessToken,
@@ -64,7 +53,7 @@ let tokens: AuthTokens | null = null
 let persistTokens: (next: AuthTokens | null) => Promise<void> = async () => undefined
 let onSessionExpired: () => void = () => undefined
 
-/** Sessiya do'koni ulanadi: tokenlarni saqlash va sessiya tugaganda chiqib ketish */
+/** Tokenlarni saqlash va sessiya tugaganda chiqish */
 export function configureAuth(options: {
   persist: (next: AuthTokens | null) => Promise<void>
   onExpired: () => void
@@ -154,7 +143,7 @@ async function doRefresh(): Promise<string> {
   const error = await toApiError(response)
   // Server xatosi — sessiyani yopmaymiz, keyinroq qayta urinib ko'riladi
   if (response.status >= 500 || response.status === 429) throw error
-  // Rad etildi (bekor qilingan, maktab to'xtatilgan, obuna tugagan) — chiqib ketamiz
+  // Refresh rad etildi — chiqib ketamiz
   tokens = null
   await persistTokens(null)
   onSessionExpired()
@@ -193,7 +182,7 @@ async function request<T>(
   const url = withQuery(path, params)
   if (USE_MOCK) return mockRequest<T>(method, url, body)
 
-  // Tanasiz POST/PATCH ham JSON bo'lib ketadi — aks holda JAX-RS 415 qaytarishi mumkin
+  // Tanasiz POST/PATCH ham JSON yuboriladi (aks holda JAX-RS 415 qaytaradi)
   const payload = body !== undefined ? body : method === 'POST' || method === 'PATCH' ? {} : undefined
 
   const token = auth ? await freshAccessToken() : null
@@ -214,7 +203,7 @@ export const api = {
   patch: <T>(path: string, body?: unknown, params?: Params) =>
     request<T>('PATCH', path, { params, body }),
   delete: <T>(path: string, params?: Params) => request<T>('DELETE', path, { params }),
-  /** Tokensiz POST — login, OTP, logout (401'da refresh qilinmaydi) */
+  /** Tokensiz POST — login, OTP, logout (eskirgan token bilan backend 401 qaytaradi) */
   postPublic: <T>(path: string, body?: unknown) =>
     request<T>('POST', path, { body, auth: false }),
 }

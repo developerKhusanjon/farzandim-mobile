@@ -8,7 +8,7 @@ import { colors, fonts, gradients, layout, spacing } from '@/theme'
 import { useSession } from '@/store/session'
 import { ApiError, USE_MOCK, errorMessage } from '@/api/http'
 
-/** Kirish maydonlari: mock — namunaviy, dev — backend seed hisobi, prod — bo'sh */
+/** Boshlang'ich qiymatlar: mock va dev'da namunaviy hisob */
 const INITIAL = USE_MOCK
   ? { login: 'emma.karimova', password: 'demo1234' }
   : __DEV__
@@ -41,8 +41,7 @@ export default function LoginScreen() {
       await loginWithPassword(login, password)
       // Navigatsiya `Stack.Protected` orqali avtomatik bo'ladi
     } catch (e) {
-      // 401/400 — login yoki parol xato; qolganida (maktab to'xtatilgan, obuna
-      // tugagan, juda ko'p urinish, internet yo'q) sababni ko'rsatamiz
+      // 401/400 — login yoki parol xato, qolganida sababni ko'rsatamiz
       const wrongCredentials = e instanceof ApiError && (e.status === 401 || e.status === 400)
       setError(wrongCredentials ? "Login yoki parol noto'g'ri" : errorMessage(e))
     } finally {

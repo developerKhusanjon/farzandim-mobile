@@ -52,7 +52,6 @@ export default function HomeworkDetailScreen() {
     try {
       setResult(await ai.mutateAsync({ homeworkId: id, mode }))
     } catch (e) {
-      // Masalan: AI o'chiq (503), tarifda AI yo'q (403), limit tugagan (429)
       setAiError(errorMessage(e))
     }
   }

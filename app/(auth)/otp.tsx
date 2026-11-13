@@ -8,7 +8,6 @@ import { colors, fonts, gradients, layout, spacing } from '@/theme'
 import { useSession } from '@/store/session'
 import { ApiError, USE_MOCK, errorMessage } from '@/api/http'
 
-/** Backend 6 xonali kod yuboradi (AuthService.numericCode(6)) */
 const CODE_LENGTH = 6
 
 /**
@@ -25,7 +24,7 @@ export default function OtpScreen() {
   const [code, setCode] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  /** Faqat dev backend: SMS ketmaydi, kod javobda keladi */
+  /** Dev backend kodni javobda qaytaradi */
   const [debugCode, setDebugCode] = useState<string | null>(null)
 
   const sendCode = async () => {

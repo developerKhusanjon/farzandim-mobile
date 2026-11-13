@@ -1,10 +1,6 @@
 /**
- * Sessiya holati: foydalanuvchi, farzandlar, tanlangan farzand.
- *
- * Tokenlar `expo-secure-store` da (Keychain / EncryptedSharedPreferences),
- * qolgan holat `AsyncStorage` da — docs/04-mobile-tz.md § Xavfsizlik.
- * Ilova ochilganda saqlangan tokenlar tiklanadi; access token 15 daqiqa yashaydi,
- * http klient uni refresh token bilan o'zi yangilaydi.
+ * Sessiya: foydalanuvchi, farzandlar, tanlangan farzand.
+ * Tokenlar SecureStore'da, qolgani AsyncStorage'da.
  */
 import { Platform } from 'react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
@@ -28,7 +24,7 @@ import type { Child, Locale, ParentUser, SchoolBrief } from '@/api/types'
 const ACCESS_KEY = 'farzandim.accessToken'
 const REFRESH_KEY = 'farzandim.refreshToken'
 const EXPIRES_KEY = 'farzandim.expiresAt'
-/** Mock davridagi kalit — faqat tozalash uchun */
+/** Eski kalit, faqat tozalash uchun */
 const LEGACY_TOKEN_KEY = 'farzandim.token'
 
 async function saveTokens(next: AuthTokens | null) {
@@ -83,14 +79,14 @@ interface MeResponse {
   user: AuthUser
   /** Maktabga bog'lanmagan mustaqil ota-ona (faqat AI) */
   independent: boolean
-  /** Maktab tarifi: AI tugmalari faqat yoqilgan bo'lsa ko'rinadi */
+  /** Maktab tarifidagi AI imkoniyatlari */
   features?: { ai: boolean; aiChat: boolean }
 }
 
 export interface OtpRequestResult {
   sent: boolean
   expiresInSeconds?: number
-  /** Faqat dev backend qaytaradi — SMS ketmaydi, kod shu yerda */
+  /** Faqat dev backend qaytaradi */
   debugCode?: string
 }
 
@@ -107,7 +103,7 @@ function toParentUser(user: AuthUser): ParentUser {
   }
 }
 
-/** Telefon yoki email — backend ikkalasini alohida maydonda kutadi */
+/** Telefon yoki email alohida maydonda yuboriladi */
 function contactBody(contact: string) {
   const value = contact.trim()
   return value.includes('@') ? { email: value } : { phone: value }
@@ -133,7 +129,7 @@ interface SessionState {
   loginWithPassword: (login: string, password: string) => Promise<void>
   requestOtp: (contact: string) => Promise<OtpRequestResult>
   verifyOtp: (contact: string, code: string) => Promise<void>
-  /** `/auth/me` + farzandlar + maktab — login'dan keyin va ilova ochilganda */
+  /** Profil, farzandlar va maktabni yuklash */
   reloadProfile: () => Promise<void>
   logout: () => Promise<void>
   setActiveChild: (childId: string) => void
@@ -152,7 +148,7 @@ const SIGNED_OUT = {
 export const useSession = create<SessionState>()(
   persist(
     (set, get) => {
-      /** Tokenlar va lokal holatni tozalash (backend'ga murojaatsiz) */
+      /** Lokal sessiyani tozalash */
       const clearLocal = async () => {
         setTokens(null)
         await saveTokens(null)
@@ -208,7 +204,7 @@ export const useSession = create<SessionState>()(
           if (!me.independent) {
             ;[children, school] = await Promise.all([
               api.get<Child[]>('/parent/children'),
-              // Maktab kartochkasi ixtiyoriy — xato bo'lsa ham kirish to'xtamaydi
+              // Maktab ma'lumoti majburiy emas
               api.get<SchoolBrief>('/parent/school').catch(() => null),
             ])
           }
@@ -225,7 +221,7 @@ export const useSession = create<SessionState>()(
         logout: async () => {
           const refreshToken = currentTokens()?.refreshToken
           if (refreshToken) {
-            // Backend refresh tokenni bekor qiladi; tarmoq bo'lmasa ham lokal chiqamiz
+            // Tarmoq bo'lmasa ham lokal chiqamiz
             await api.postPublic('/auth/logout', { refreshToken }).catch(() => undefined)
           }
           await clearLocal()
@@ -238,14 +234,13 @@ export const useSession = create<SessionState>()(
     {
       name: 'farzandim.session',
       storage: createJSONStorage(() => AsyncStorage),
-      // v1 — mock davridagi sessiya (tokensiz, mock ID'lar). Haqiqiy backend
-      // bilan ishlatib bo'lmaydi: foydalanuvchi bir marta qayta kiradi.
+      // v1 sessiyada token yo'q — qayta kirish kerak
       version: 2,
       migrate: (persisted) => ({
         ...SIGNED_OUT,
         onboarded: Boolean((persisted as { onboarded?: boolean } | null)?.onboarded),
       }),
-      // isAuthenticated saqlanmaydi — ochilishda SecureStore'dagi tokenlardan aniqlanadi
+      // isAuthenticated tokenlardan aniqlanadi
       partialize: (s) => ({
         user: s.user,
         children: s.children,
@@ -260,8 +255,7 @@ export const useSession = create<SessionState>()(
           setTokens(tokens)
           const restored = Boolean(tokens && state?.user)
           useSession.setState({ isAuthenticated: restored, hydrated: true })
-          // Farzandlar ro'yxati o'zgargan bo'lishi mumkin — fonda yangilaymiz.
-          // Token eskirgan bo'lsa http klient refresh qiladi, rad etilsa chiqaradi.
+          // Farzandlar ro'yxatini fonda yangilaymiz
           if (restored) void useSession.getState().reloadProfile().catch(() => undefined)
         })()
       },
@@ -269,7 +263,7 @@ export const useSession = create<SessionState>()(
   ),
 )
 
-// Refresh rad etilsa (sessiya bekor qilingan, obuna tugagan) — lokal chiqish
+// Refresh rad etilsa — lokal chiqish
 configureAuth({
   persist: saveTokens,
   onExpired: () => {

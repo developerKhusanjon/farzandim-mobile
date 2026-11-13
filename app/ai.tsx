@@ -62,7 +62,6 @@ export default function AiScreen() {
         {
           id: `err-${Date.now()}`,
           author: 'AI',
-          // Sababini aytamiz: AI o'chiq, tarifda yo'q, limit tugagan yoki internet yo'q
           content: `Kechirasiz, javob olinmadi: ${errorMessage(e)}`,
           createdAt: new Date().toISOString(),
         },

@@ -24,7 +24,7 @@ type Route = {
   lag?: number
 }
 
-/** Mock sessiya: login — maktab ota-onasi, OTP — mustaqil foydalanuvchi */
+/** Login — maktab ota-onasi, OTP — mustaqil foydalanuvchi */
 let mockIndependent = false
 
 function mockUser() {
@@ -42,8 +42,6 @@ function mockAuth() {
 
 const routes: Route[] = [
   /* ---------------------------------- Auth --------------------------------- */
-  // Shakl — backend `AuthResponse` (login/verify/refresh), keyin ilova
-  // `/auth/me`, `/parent/children`, `/parent/school` ni so'raydi.
   {
     method: 'POST',
     pattern: /^\/auth\/login$/,
