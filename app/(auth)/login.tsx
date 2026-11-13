@@ -6,6 +6,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Button, Checkbox, Field, Logo, NoteCard, Txt } from '@/ui'
 import { colors, fonts, gradients, layout, spacing } from '@/theme'
 import { useSession } from '@/store/session'
+import { ApiError, USE_MOCK, errorMessage } from '@/api/http'
+
+/** Kirish maydonlari: mock — namunaviy, dev — backend seed hisobi, prod — bo'sh */
+const INITIAL = USE_MOCK
+  ? { login: 'emma.karimova', password: 'demo1234' }
+  : __DEV__
+    ? { login: 'otaona1', password: 'parol123' }
+    : { login: '', password: '' }
 
 /**
  * Kirish (mockup №2).
@@ -16,20 +24,27 @@ export default function LoginScreen() {
   const insets = useSafeAreaInsets()
   const loginWithPassword = useSession((s) => s.loginWithPassword)
 
-  const [login, setLogin] = useState('emma.karimova')
-  const [password, setPassword] = useState('demo1234')
+  const [login, setLogin] = useState(INITIAL.login)
+  const [password, setPassword] = useState(INITIAL.password)
   const [remember, setRemember] = useState(true)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const submit = async () => {
+    if (!login.trim() || !password) {
+      setError('Login va parolni kiriting')
+      return
+    }
     setError(null)
     setLoading(true)
     try {
       await loginWithPassword(login, password)
       // Navigatsiya `Stack.Protected` orqali avtomatik bo'ladi
-    } catch {
-      setError("Login yoki parol noto'g'ri")
+    } catch (e) {
+      // 401/400 — login yoki parol xato; qolganida (maktab to'xtatilgan, obuna
+      // tugagan, juda ko'p urinish, internet yo'q) sababni ko'rsatamiz
+      const wrongCredentials = e instanceof ApiError && (e.status === 401 || e.status === 400)
+      setError(wrongCredentials ? "Login yoki parol noto'g'ri" : errorMessage(e))
     } finally {
       setLoading(false)
     }
@@ -136,9 +151,15 @@ export default function LoginScreen() {
 
           <View style={{ flex: 1 }} />
 
-          <NoteCard tone="blue" icon="lightbulb" title="Demo rejim" style={{ marginTop: spacing.xl }}>
-            Istalgan parol bilan kiring — ma'lumotlar namunaviy.
-          </NoteCard>
+          {USE_MOCK ? (
+            <NoteCard tone="blue" icon="lightbulb" title="Demo rejim" style={{ marginTop: spacing.xl }}>
+              Istalgan parol bilan kiring — ma'lumotlar namunaviy.
+            </NoteCard>
+          ) : __DEV__ ? (
+            <NoteCard tone="blue" icon="lightbulb" title="Dev" style={{ marginTop: spacing.xl }}>
+              Namunaviy hisob: otaona1 … otaona30, parol — parol123
+            </NoteCard>
+          ) : null}
         </ScrollView>
       </KeyboardAvoidingView>
     </LinearGradient>

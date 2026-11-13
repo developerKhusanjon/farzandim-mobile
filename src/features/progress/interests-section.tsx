@@ -23,7 +23,14 @@ export function InterestsSection({ childId }: { childId: string }) {
           level: i.level,
           colorKey: i.colorKey,
           iconKey: i.iconKey,
-          badge: i.source === 'AI' ? 'AI' : i.source === 'TEACHER' ? "O'qituvchi" : 'Ota-ona',
+          badge:
+            i.source === 'AI'
+              ? 'AI'
+              : i.source === 'TEACHER'
+                ? "O'qituvchi"
+                : i.source === 'SELF'
+                  ? "O'zi"
+                  : 'Ota-ona',
         }))
       : abilities.map((a) => ({
           id: a.id,

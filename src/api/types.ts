@@ -19,7 +19,8 @@ export interface ParentUser {
   email?: string
   /** `null` — maktabga bog'lanmagan mustaqil foydalanuvchi (faqat AI) */
   schoolId: string | null
-  relation: 'MOTHER' | 'FATHER' | 'GUARDIAN'
+  /** Backend login javobida yo'q — faqat farzand kartasida bo'lishi mumkin */
+  relation?: 'MOTHER' | 'FATHER' | 'GUARDIAN'
   locale: Locale
 }
 
@@ -120,7 +121,8 @@ export interface CharacterGroup {
   /** O'qituvchi yoki AI kuzatuvi */
   summary: string
   updatedAt: string
-  source: 'TEACHER' | 'AI'
+  /** Backend: TEACHER_TASK | AI_ANALYSIS | OBSERVATION (mock: TEACHER | AI) */
+  source: 'TEACHER' | 'AI' | 'TEACHER_TASK' | 'AI_ANALYSIS' | 'OBSERVATION'
 }
 
 export interface StrengthWeakness {
@@ -138,7 +140,8 @@ export interface Interest {
   level: number
   colorKey: AccentKey
   iconKey: string
-  source: 'TEACHER' | 'AI' | 'PARENT'
+  /** SELF — o'quvchining o'zi belgilagan */
+  source: 'TEACHER' | 'AI' | 'PARENT' | 'SELF'
 }
 
 export interface Ability {
@@ -245,7 +248,22 @@ export interface CognitiveTask {
 /*                            Xabarlar va bildirishnomalar                    */
 /* -------------------------------------------------------------------------- */
 
-export type MessageCategory = 'LESSON' | 'HOMEWORK' | 'GRADE' | 'TEACHER' | 'SCHOOL' | 'SYSTEM'
+/**
+ * Backend: GRADE · HOMEWORK · ATTENDANCE · ANNOUNCEMENT · LESSON_SUMMARY · AI · GENERAL.
+ * LESSON · TEACHER · SCHOOL · SYSTEM — mock ma'lumotdagi eski nomlar.
+ */
+export type MessageCategory =
+  | 'GRADE'
+  | 'HOMEWORK'
+  | 'ATTENDANCE'
+  | 'ANNOUNCEMENT'
+  | 'LESSON_SUMMARY'
+  | 'AI'
+  | 'GENERAL'
+  | 'LESSON'
+  | 'TEACHER'
+  | 'SCHOOL'
+  | 'SYSTEM'
 
 export interface Message {
   id: string

@@ -15,6 +15,8 @@ import {
 } from '@/ui'
 import { accent, colors, layout, radius, spacing } from '@/theme'
 import { useAiHomework, useHomeworkItem, useSetHomeworkStatus } from '@/api/queries'
+import { errorMessage } from '@/api/http'
+import { useActiveChild } from '@/store/session'
 import type { AiHomeworkMode, AiHomeworkResult } from '@/api/types'
 
 const STATUS_META = {
@@ -36,16 +38,23 @@ export default function HomeworkDetailScreen() {
   const { data: hw, isLoading } = useHomeworkItem(id)
   const setStatus = useSetHomeworkStatus()
   const ai = useAiHomework()
+  const child = useActiveChild()
 
   const [activeMode, setActiveMode] = useState<AiHomeworkMode | null>(null)
   const [result, setResult] = useState<AiHomeworkResult | null>(null)
+  const [aiError, setAiError] = useState<string | null>(null)
 
   const runAi = async (mode: AiHomeworkMode) => {
     if (!id) return
     setActiveMode(mode)
     setResult(null)
-    const res = await ai.mutateAsync({ homeworkId: id, mode })
-    setResult(res)
+    setAiError(null)
+    try {
+      setResult(await ai.mutateAsync({ homeworkId: id, mode }))
+    } catch (e) {
+      // Masalan: AI o'chiq (503), tarifda AI yo'q (403), limit tugagan (429)
+      setAiError(errorMessage(e))
+    }
   }
 
   if (isLoading || !hw) {
@@ -210,6 +219,10 @@ export default function HomeworkDetailScreen() {
               <ActivityIndicator color={colors.brand} />
               <Txt variant="small">AI tayyorlamoqda...</Txt>
             </View>
+          ) : aiError ? (
+            <NoteCard tone="red" icon="alert-triangle" style={{ marginTop: spacing.base }}>
+              {aiError}
+            </NoteCard>
           ) : result ? (
             <View style={{ marginTop: spacing.base, gap: spacing.md }}>
               {result.warning ? (
@@ -264,7 +277,12 @@ export default function HomeworkDetailScreen() {
           size="lg"
           loading={setStatus.isPending}
           onPress={() =>
-            setStatus.mutate({ id: hw.id, status: hw.status === 'DONE' ? 'PENDING' : 'DONE' })
+            child &&
+              setStatus.mutate({
+                id: hw.id,
+                status: hw.status === 'DONE' ? 'PENDING' : 'DONE',
+                childId: child.id,
+              })
           }
         />
       </ScrollView>

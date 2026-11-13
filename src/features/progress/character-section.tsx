@@ -21,6 +21,8 @@ import type { CharacterGroup } from '@/api/types'
  * Har bir raqam ostida ota-ona tushunadigan izoh bor — quruq foiz emas.
  */
 function CharacterCard({ group }: { group: CharacterGroup }) {
+  // Backend: AI_ANALYSIS; mock: AI. Qolganlari — o'qituvchi topshirig'i yoki kuzatuvi
+  const isAi = group.source === 'AI' || group.source === 'AI_ANALYSIS'
   const tone = accent(group.colorKey)
 
   return (
@@ -45,12 +47,12 @@ function CharacterCard({ group }: { group: CharacterGroup }) {
             {group.label}
           </Txt>
           <Txt variant="caption">
-            {group.source === 'AI' ? 'AI tahlili' : "O'qituvchi kuzatuvi"}
+            {isAi ? 'AI tahlili' : "O'qituvchi kuzatuvi"}
           </Txt>
         </View>
         <Badge
-          label={group.source === 'AI' ? 'AI' : "O'qituvchi"}
-          colorKey={group.source === 'AI' ? 'teal' : 'blue'}
+          label={isAi ? 'AI' : "O'qituvchi"}
+          colorKey={isAi ? 'teal' : 'blue'}
           size="sm"
         />
       </View>

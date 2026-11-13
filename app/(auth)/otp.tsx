@@ -6,6 +6,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Button, Field, IconButton, NoteCard, Txt } from '@/ui'
 import { colors, fonts, gradients, layout, spacing } from '@/theme'
 import { useSession } from '@/store/session'
+import { ApiError, USE_MOCK, errorMessage } from '@/api/http'
+
+/** Backend 6 xonali kod yuboradi (AuthService.numericCode(6)) */
+const CODE_LENGTH = 6
 
 /**
  * Mustaqil foydalanuvchi kirishi: email yoki telefon + SMS kod.
@@ -21,6 +25,8 @@ export default function OtpScreen() {
   const [code, setCode] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  /** Faqat dev backend: SMS ketmaydi, kod javobda keladi */
+  const [debugCode, setDebugCode] = useState<string | null>(null)
 
   const sendCode = async () => {
     if (contact.trim().length < 5) {
@@ -30,24 +36,28 @@ export default function OtpScreen() {
     setError(null)
     setLoading(true)
     try {
-      await requestOtp(contact.trim())
+      const result = await requestOtp(contact.trim())
+      setDebugCode(result.debugCode ?? null)
       setStep('code')
+    } catch (e) {
+      setError(errorMessage(e))
     } finally {
       setLoading(false)
     }
   }
 
   const confirm = async () => {
-    if (code.trim().length < 4) {
-      setError('Kod 4 xonali bo‘lishi kerak')
+    if (code.trim().length !== CODE_LENGTH) {
+      setError(`Kod ${CODE_LENGTH} xonali bo‘lishi kerak`)
       return
     }
     setError(null)
     setLoading(true)
     try {
       await verifyOtp(contact.trim(), code.trim())
-    } catch {
-      setError('Kod noto‘g‘ri')
+    } catch (e) {
+      const wrongCode = e instanceof ApiError && (e.status === 401 || e.status === 422)
+      setError(wrongCode ? 'Kod noto‘g‘ri yoki muddati o‘tgan' : errorMessage(e))
     } finally {
       setLoading(false)
     }
@@ -83,7 +93,7 @@ export default function OtpScreen() {
             <Txt variant="small" style={{ maxWidth: 300 }}>
               {step === 'contact'
                 ? 'Kirish uchun raqam yoki email kiriting — tasdiqlash kodi yuboriladi'
-                : `${contact} manziliga yuborilgan 4 xonali kodni kiriting`}
+                : `${contact} manziliga yuborilgan ${CODE_LENGTH} xonali kodni kiriting`}
             </Txt>
           </View>
 
@@ -101,11 +111,11 @@ export default function OtpScreen() {
             ) : (
               <Field
                 icon="lock"
-                placeholder="1234"
+                placeholder="123456"
                 value={code}
                 onChangeText={setCode}
                 keyboardType="number-pad"
-                maxLength={4}
+                maxLength={CODE_LENGTH}
               />
             )}
 
@@ -141,9 +151,11 @@ export default function OtpScreen() {
             xabarlari esa maktab ulangandan keyin ko'rinadi.
           </NoteCard>
 
-          {step === 'code' ? (
+          {step === 'code' && (USE_MOCK || debugCode) ? (
             <NoteCard tone="blue" icon="lightbulb" style={{ marginTop: spacing.md }}>
-              Demo rejim: istalgan 4 xonali kod ishlaydi.
+              {USE_MOCK
+                ? 'Demo rejim: istalgan 6 xonali kod ishlaydi.'
+                : `Dev rejim: SMS yuborilmaydi, kod — ${debugCode}`}
             </NoteCard>
           ) : null}
         </ScrollView>

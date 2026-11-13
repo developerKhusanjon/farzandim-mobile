@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { api } from './http'
+import { USE_MOCK, api } from './http'
 import type {
   Ability,
   AiHomeworkMode,
@@ -43,7 +43,7 @@ export const qk = {
   messages: ['messages'] as const,
   school: ['school'] as const,
   teachers: ['teachers'] as const,
-  schedule: ['schedule'] as const,
+  schedule: (childId: string) => ['schedule', childId] as const,
 }
 
 interface DashboardResponse {
@@ -118,19 +118,42 @@ export const useAbilities = (childId: string | undefined) =>
     enabled: Boolean(childId),
   })
 
+/**
+ * Qiziqishlar bo'yicha AI maslahati — hozircha faqat mock'da: mobile-backend'da
+ * bu endpoint yo'q (docs/03-api-contract.md'da ham yo'q). Haqiqiy backend bilan
+ * so'rov yuborilmaydi, ekranlar maslahat blokini ko'rsatmaydi.
+ */
 export const useInterestAdvice = (childId: string | undefined) =>
   useQuery({
     queryKey: qk.interestAdvice(childId ?? ''),
     queryFn: () => api.get<{ advice: string }>(`/students/${childId}/interest-advice`),
-    enabled: Boolean(childId),
+    enabled: Boolean(childId) && USE_MOCK,
   })
 
 /* ------------------------------ Uy vazifalari ----------------------------- */
 
+/** Mahalliy sana `YYYY-MM-DD` ko'rinishida (toISOString UTC'ga o'tkazib yuboradi) */
+function localIsoDate(date: Date) {
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
+}
+
+/**
+ * Backend scope'lari: today · upcoming · all (±30 kun). "Kechagi" uchun alohida scope
+ * yo'q — `all` dan muddati kecha bo'lganlarini ajratamiz.
+ */
 export const useHomework = (childId: string | undefined, scope: 'today' | 'yesterday' | 'all') =>
   useQuery({
     queryKey: qk.homework(childId ?? '', scope),
-    queryFn: () => api.get<Homework[]>(`/parent/children/${childId}/homework`, { scope }),
+    queryFn: async () => {
+      if (scope !== 'yesterday') {
+        return api.get<Homework[]>(`/parent/children/${childId}/homework`, { scope })
+      }
+      const all = await api.get<Homework[]>(`/parent/children/${childId}/homework`, { scope: 'all' })
+      const yesterday = new Date()
+      yesterday.setDate(yesterday.getDate() - 1)
+      return all.filter((h) => h.dueDate === localIsoDate(yesterday))
+    },
     enabled: Boolean(childId),
   })
 
@@ -144,8 +167,13 @@ export const useHomeworkItem = (id: string | undefined) =>
 export const useSetHomeworkStatus = () => {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (input: { id: string; status: HomeworkStatus }) =>
-      api.patch<Homework>(`/homework/${input.id}/status`, { status: input.status }),
+    // Backend qaysi farzand uchun belgilanayotganini `?childId=` dan biladi (majburiy)
+    mutationFn: (input: { id: string; status: HomeworkStatus; childId: string }) =>
+      api.patch<Homework>(
+        `/homework/${input.id}/status`,
+        { status: input.status },
+        { childId: input.childId },
+      ),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['homework'] })
       void qc.invalidateQueries({ queryKey: ['homework-item'] })
@@ -202,14 +230,21 @@ export const useSchool = () =>
 export const useTeachers = () =>
   useQuery({ queryKey: qk.teachers, queryFn: () => api.get<Teacher[]>('/parent/teachers') })
 
-export const useSchedule = () =>
-  useQuery({ queryKey: qk.schedule, queryFn: () => api.get<ScheduleItem[]>('/parent/schedule') })
+/** Tanlangan farzandning jadvali (ko'p farzandli ota-ona uchun `childId` shart) */
+export const useSchedule = (childId: string | undefined) =>
+  useQuery({
+    queryKey: qk.schedule(childId ?? ''),
+    queryFn: () => api.get<ScheduleItem[]>('/parent/schedule', { childId }),
+    enabled: Boolean(childId),
+  })
 
 /* ------------------------------- AI yordamchi ----------------------------- */
 
+/** `childId` — AI javobni shu farzandning sinfi va natijalariga moslaydi */
 export const useSendAiMessage = () =>
   useMutation({
-    mutationFn: (content: string) => api.post<AiMessage>('/ai/messages', { content }),
+    mutationFn: (input: { content: string; childId?: string }) =>
+      api.post<AiMessage>('/ai/messages', input),
   })
 
 /** Uy vazifasi ekranidagi 3 ta rejim: soddalashtir · tushuntir · yechib ber */

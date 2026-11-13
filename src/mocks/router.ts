@@ -24,37 +24,61 @@ type Route = {
   lag?: number
 }
 
+/** Mock sessiya: login — maktab ota-onasi, OTP — mustaqil foydalanuvchi */
+let mockIndependent = false
+
+function mockUser() {
+  return { ...db.parent, schoolId: mockIndependent ? null : db.parent.schoolId, role: 'PARENT' }
+}
+
+function mockAuth() {
+  return {
+    accessToken: 'mock-access-token',
+    refreshToken: 'mock-refresh-token',
+    user: mockUser(),
+    schools: mockIndependent ? [] : [db.school],
+  }
+}
+
 const routes: Route[] = [
   /* ---------------------------------- Auth --------------------------------- */
+  // Shakl — backend `AuthResponse` (login/verify/refresh), keyin ilova
+  // `/auth/me`, `/parent/children`, `/parent/school` ni so'raydi.
   {
     method: 'POST',
     pattern: /^\/auth\/login$/,
     lag: 500,
-    handler: () => ({
-      accessToken: 'mock-access-token',
-      refreshToken: 'mock-refresh-token',
-      user: db.parent,
-      children: db.children,
-      school: db.school,
-    }),
+    handler: () => {
+      mockIndependent = false
+      return mockAuth()
+    },
   },
   {
     method: 'POST',
     pattern: /^\/auth\/login\/otp\/request$/,
     lag: 600,
-    handler: () => ({ sent: true, expiresInSeconds: 120 }),
+    handler: () => ({ sent: true, channel: 'PHONE', expiresInSeconds: 300, debugCode: '000000' }),
   },
   {
     method: 'POST',
     pattern: /^\/auth\/login\/otp\/verify$/,
     lag: 500,
-    handler: () => ({
-      accessToken: 'mock-access-token',
-      refreshToken: 'mock-refresh-token',
+    handler: () => {
       // Mustaqil foydalanuvchi — maktabga bog'lanmagan, faqat AI funksiyalari
-      user: { ...db.parent, schoolId: null },
-      children: [],
-      school: null,
+      mockIndependent = true
+      return mockAuth()
+    },
+  },
+  { method: 'POST', pattern: /^\/auth\/refresh$/, handler: () => mockAuth() },
+  { method: 'POST', pattern: /^\/auth\/logout$/, handler: () => ({ ok: true }) },
+  {
+    method: 'GET',
+    pattern: /^\/auth\/me$/,
+    handler: () => ({
+      user: mockUser(),
+      schools: mockIndependent ? [] : [db.school],
+      independent: mockIndependent,
+      features: { ai: true, aiChat: true },
     }),
   },
 

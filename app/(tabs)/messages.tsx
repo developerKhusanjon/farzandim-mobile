@@ -11,9 +11,9 @@ type Filter = 'all' | 'education' | 'reminder' | 'system'
 
 const FILTER_MAP: Record<Filter, MessageCategory[] | null> = {
   all: null,
-  education: ['LESSON', 'GRADE', 'TEACHER'],
+  education: ['LESSON_SUMMARY', 'GRADE', 'ATTENDANCE', 'LESSON', 'TEACHER'],
   reminder: ['HOMEWORK'],
-  system: ['SCHOOL', 'SYSTEM'],
+  system: ['ANNOUNCEMENT', 'AI', 'GENERAL', 'SCHOOL', 'SYSTEM'],
 }
 
 function timeLabel(iso: string) {

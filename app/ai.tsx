@@ -12,6 +12,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Badge, Card, Icon, IconButton, IconTile, LogoMark, ScreenHeader, Txt } from '@/ui'
 import { accent, colors, fonts, layout, radius, spacing } from '@/theme'
 import { useSendAiMessage } from '@/api/queries'
+import { errorMessage } from '@/api/http'
+import { useActiveChild } from '@/store/session'
 import { aiGreeting, aiSubjectChips } from '@/mocks/data'
 import type { AiMessage } from '@/api/types'
 
@@ -31,6 +33,7 @@ export default function AiScreen() {
   const insets = useSafeAreaInsets()
   const scrollRef = useRef<ScrollView>(null)
   const send = useSendAiMessage()
+  const child = useActiveChild()
   const params = useLocalSearchParams<{ prompt?: string }>()
 
   const [input, setInput] = useState('')
@@ -49,7 +52,7 @@ export default function AiScreen() {
     ])
     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50)
     try {
-      const reply = await send.mutateAsync(content)
+      const reply = await send.mutateAsync({ content, childId: child?.id })
       setMessages((prev) => [...prev, reply])
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50)
     } catch (e) {
@@ -59,7 +62,8 @@ export default function AiScreen() {
         {
           id: `err-${Date.now()}`,
           author: 'AI',
-          content: 'Kechirasiz, javob olishda xatolik yuz berdi. Iltimos qaytadan urinib ko‘ring.',
+          // Sababini aytamiz: AI o'chiq, tarifda yo'q, limit tugagan yoki internet yo'q
+          content: `Kechirasiz, javob olinmadi: ${errorMessage(e)}`,
           createdAt: new Date().toISOString(),
         },
       ])
