@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Card, EmptyState, IconTile, ScreenHeader, SegmentedControl, Skeleton, Txt } from '@/ui'
 import { colors, layout, radius, spacing } from '@/theme'
 import { useSchedule } from '@/api/queries'
+import { useActiveChild } from '@/store/session'
 
 const DAYS = [
   { value: '1', label: 'Du' },
@@ -18,7 +19,8 @@ export default function ScheduleScreen() {
   const insets = useSafeAreaInsets()
   const todayIndex = new Date().getDay()
   const [day, setDay] = useState(String(todayIndex >= 1 && todayIndex <= 5 ? todayIndex : 1))
-  const { data: schedule = [], isLoading } = useSchedule()
+  const childId = useActiveChild()?.id
+  const { data: schedule = [], isLoading } = useSchedule(childId)
 
   const items = schedule.filter((s) => String(s.dayOfWeek) === day)
 
@@ -62,7 +64,7 @@ export default function ScheduleScreen() {
                     {item.subjectName}
                   </Txt>
                   <Txt variant="caption" numberOfLines={1}>
-                    {item.teacherName} · {item.room}-xona
+                    {item.room ? `${item.teacherName} · ${item.room}-xona` : item.teacherName}
                   </Txt>
                 </View>
               </View>

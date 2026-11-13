@@ -6,20 +6,33 @@ To'liq TZ: [`docs/04-mobile-tz.md`](../docs/04-mobile-tz.md)
 
 ## Ishga tushirish
 
+Standart holatda ilova **haqiqiy mobile-backend** bilan ishlaydi (`.env.development`:
+`http://localhost:8082/api/v1`). Avval backend'ni ishga tushiring
+(`../farzandim-backend/README.md`), keyin:
+
 ```bash
 npm install
 npm run ios        # iOS simulyatorda
-npm run android    # Android emulyatorda
+npm run android    # Android emulyatorda (.env.local da 10.0.2.2 — .env.example)
 npm start          # QR kod bilan (Expo Go)
+```
+
+Metro **8088** portda: standart 8081 school-backend bilan to'qnashadi.
+Telefon yoki Android emulyator uchun manzil — `.env.example` da.
+
+Backend'siz, namunaviy ma'lumot bilan:
+
+```bash
+npm run start:mock
 ```
 
 ```bash
 npm run typecheck
 ```
 
-## Demo kirish
+## Demo kirish (mock rejimi)
 
-Kirish ekranida istalgan parol ishlaydi:
+`npm run start:mock` rejimida istalgan parol ishlaydi:
 
 - **Login + parol** → maktabga ulangan ota-ona (to'liq ilova)
 - **Email yoki telefon** → mustaqil foydalanuvchi (faqat AI yordamchi)
@@ -59,20 +72,22 @@ src/
 Har bir kognitiv topshiriq **"nega aynan shu mashq"** izohi bilan keladi — aniq raqamga
 tayanadi (masalan "Diqqat barqarorligi 64%"), shuning uchun ota-ona tavsiyaga ishonadi.
 
+## Backend bilan ishlash
+
+- **Kirish:** login + parol (`otaona1` … `otaona30` / `parol123` — dev seed) yoki telefon/email
+  + 6 xonali SMS kod. Dev backend SMS yubormaydi — kod ekranda ko'rsatiladi.
+  Noma'lum raqam OTP bilan kirsa — maktabga bog'lanmagan mustaqil ota-ona (faqat AI).
+- **Sessiya:** access (15 daqiqa) va refresh token SecureStore'da; ilova qayta ochilganda
+  tiklanadi, 401'da bitta umumiy refresh (`src/api/http.ts`). Chiqishda refresh token
+  backend'da bekor qilinadi.
+- Login'dan keyin `GET /auth/me`, `/parent/children`, `/parent/school` yuklanadi.
+- Qiziqishlar bo'yicha AI maslahati (`/students/{id}/interest-advice`) hozircha faqat mock'da —
+  backend'da endpoint yo'q.
+
 ## Mock rejim
 
-`src/api/http.ts` dagi `USE_MOCK` yoqilganda so'rovlar `src/mocks/router.ts` ga boradi.
-URL'lar [`docs/03-api-contract.md`](../docs/03-api-contract.md) shartnomasi bilan bir xil.
-
-Backend tayyor bo'lganda:
-
-```bash
-# .env
-EXPO_PUBLIC_API_URL=https://api.farzandim.uz/api/v1
-EXPO_PUBLIC_USE_MOCK=false
-```
-
-Ekranlar va query hooklar o'zgarmaydi.
+`EXPO_PUBLIC_USE_MOCK=true` (yoki `EXPO_PUBLIC_API_URL` berilmagan) bo'lsa so'rovlar
+`src/mocks/router.ts` ga boradi. Mock javoblari backend shakliga moslangan.
 
 ## Dizayn
 

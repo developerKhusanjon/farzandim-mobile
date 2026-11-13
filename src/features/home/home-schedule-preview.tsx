@@ -3,6 +3,7 @@ import { router } from 'expo-router'
 import { Badge, Card, IconTile, SectionHeader, Skeleton, Txt } from '@/ui'
 import { colors, radius, spacing } from '@/theme'
 import { useSchedule } from '@/api/queries'
+import { useActiveChild } from '@/store/session'
 
 const DAY_NAMES = ['', 'Dushanba', 'Seshanba', 'Chorshanba', 'Payshanba', 'Juma', 'Shanba', 'Yakshanba']
 
@@ -11,7 +12,8 @@ const DAY_NAMES = ['', 'Dushanba', 'Seshanba', 'Chorshanba', 'Payshanba', 'Juma'
  * Ota-ona farzandining bugungi darslarini bir qarashda ko'rishi mumkin.
  */
 export function HomeSchedulePreview() {
-  const { data: schedule = [], isLoading } = useSchedule()
+  const childId = useActiveChild()?.id
+  const { data: schedule = [], isLoading } = useSchedule(childId)
 
   const currentDayIndex = new Date().getDay()
   // Agar yakshanba (0) yoki shanba (6) bo'lsa, dushanba (1) ko'rsatamiz
@@ -91,7 +93,7 @@ export function HomeSchedulePreview() {
                   {lesson.subjectName}
                 </Txt>
                 <Txt variant="caption" numberOfLines={1} color={colors.textSecondary}>
-                  {lesson.teacherName} · {lesson.room}-xona
+                  {lesson.room ? `${lesson.teacherName} · ${lesson.room}-xona` : lesson.teacherName}
                 </Txt>
               </View>
             </Pressable>

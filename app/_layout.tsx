@@ -4,7 +4,7 @@ import { Stack, SplashScreen } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import {
   Poppins_500Medium,
   Poppins_600SemiBold,
@@ -20,18 +20,9 @@ import {
 } from '@expo-google-fonts/inter'
 import { colors } from '@/theme'
 import { useSession } from '@/store/session'
+import { queryClient } from '@/api/query-client'
 
 void SplashScreen.preventAutoHideAsync()
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 60_000,
-      retry: 1,
-      refetchOnWindowFocus: false,
-    },
-  },
-})
 
 export default function RootLayout() {
   const [poppinsLoaded] = usePoppins({
